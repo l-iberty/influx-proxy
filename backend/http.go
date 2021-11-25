@@ -214,6 +214,7 @@ func (hb *HttpBackend) WriteStream(db string, stream io.Reader, compressed bool)
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 204 {
+		log.Printf("successful write to %s, db=%s", hb.Url, db)
 		return
 	}
 	log.Printf("write status code: %d, from: %s", resp.StatusCode, hb.Url)

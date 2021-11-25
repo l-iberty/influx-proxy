@@ -2,7 +2,7 @@
 
 This project adds a basic high availability and consistent hash layer to InfluxDB.
 
-NOTE: influx-proxy must be built with Go 1.14+ with Go module support, don't implement udp.
+NOTE: influx-proxy must be built with Go 1.13+ with Go module support, don't implement udp.
 
 ## Why
 
@@ -37,7 +37,7 @@ Since the InfluxDB Proxy v1 is limited by the only `ONE` database and the `KEYMA
 
 ## Requirements
 
-* Golang >= 1.14 with Go module support
+* Golang >= 1.13 with Go module support
 
 ## Usage
 
@@ -46,28 +46,19 @@ Since the InfluxDB Proxy v1 is limited by the only `ONE` database and the `KEYMA
 ```sh
 $ git clone https://github.com/chengshiwen/influx-proxy.git
 $ cd influx-proxy
-$ make
-$ ./bin/influx-proxy -config proxy.json
+$ go build
+$ ./influx-proxy -config proxy.json
 ```
 
 #### Usage
 
 ```sh
-$ ./bin/influx-proxy -h
-Usage of ./bin/influx-proxy:
+$ ./influx-proxy -h
+Usage of ./influx-proxy:
   -config string
         proxy config file with json/yaml/toml format (default "proxy.json")
   -version
         proxy version
-```
-
-#### Build Release
-
-```sh
-$ # build current platform
-$ make build
-$ # build linux amd64
-$ make linux
 ```
 
 ## Tutorial
