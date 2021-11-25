@@ -12,7 +12,7 @@
 			"program": "${workspaceFolder}/main.go",
 			"args": [
 				"-config",
-				"proxy2.json"
+				"proxy.json"
 			]
 		}
 	]
