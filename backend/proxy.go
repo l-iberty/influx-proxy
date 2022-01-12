@@ -19,17 +19,21 @@ import (
 )
 
 type Proxy struct {
-	Circles []*Circle
-	DBSet   util.Set
+	sync.RWMutex
+	Circles      []*Circle
+	DBSet        util.Set
+	CircleKeyMap map[int]string
 }
 
 func NewProxy(cfg *ProxyConfig) (ip *Proxy) {
 	ip = &Proxy{
-		Circles: make([]*Circle, len(cfg.Circles)),
-		DBSet:   util.NewSet(),
+		Circles:      make([]*Circle, len(cfg.Circles)),
+		DBSet:        util.NewSet(),
+		CircleKeyMap: make(map[int]string),
 	}
 	for idx, circfg := range cfg.Circles {
 		ip.Circles[idx] = NewCircle(circfg, cfg, idx)
+		ip.CircleKeyMap[idx] = ""
 	}
 	for _, db := range cfg.DBList {
 		ip.DBSet.Add(db)
@@ -47,12 +51,50 @@ func GetKey(db, meas string) string {
 	return b.String()
 }
 
+// func (ip *Proxy) GetBackends(key string) []*Backend {
+// 	backends := make([]*Backend, len(ip.Circles))
+// 	for i, circle := range ip.Circles {
+// 		backends[i] = circle.GetBackend(key)
+// 	}
+// 	return backends
+// }
+
+// 一个 key 只映射到一个 circle
 func (ip *Proxy) GetBackends(key string) []*Backend {
-	backends := make([]*Backend, len(ip.Circles))
-	for i, circle := range ip.Circles {
-		backends[i] = circle.GetBackend(key)
-	}
+	circle := ip.AssignCircle(key)
+	backends := make([]*Backend, 1)
+	backends[0] = circle.GetBackend(key)
 	return backends
+}
+
+func (ip *Proxy) AssignCircle(key string) *Circle {
+	ip.Lock()
+	defer ip.Unlock()
+
+	for i, k := range ip.CircleKeyMap {
+		if k == key {
+			return ip.Circles[i]
+		}
+	}
+	for i, k := range ip.CircleKeyMap {
+		if k == "" {
+			ip.CircleKeyMap[i] = key
+			return ip.Circles[i]
+		}
+	}
+	return ip.Circles[rand.Intn(len(ip.Circles))]
+}
+
+func (ip *Proxy) GetCircle(key string) *Circle {
+	ip.RLock()
+	defer ip.RUnlock()
+
+	for i, k := range ip.CircleKeyMap {
+		if k == key {
+			return ip.Circles[i]
+		}
+	}
+	return nil
 }
 
 func (ip *Proxy) GetHealth(stats bool) []interface{} {

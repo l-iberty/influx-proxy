@@ -61,14 +61,38 @@ func (ic *Circle) addRouter(be *Backend, idx int, hashKey string) {
 	}
 }
 
+func (ic *Circle) RemoveBackend(key string) {
+	ic.router.Remove(key)
+	value, _ := ic.router.Get(key)
+	delete(ic.mapToBackend, value)
+	ic.routerCaches.Delete(key)
+	ic.router.Remove(value)
+}
+
+// func (ic *Circle) GetBackend(key string) *Backend {
+// 	if be, ok := ic.routerCaches.Load(key); ok {
+// 		return be.(*Backend)
+// 	}
+// 	value, _ := ic.router.Get(key)
+// 	be := ic.mapToBackend[value]
+// 	ic.routerCaches.Store(key, be)
+// 	return be
+// }
+
 func (ic *Circle) GetBackend(key string) *Backend {
 	if be, ok := ic.routerCaches.Load(key); ok {
 		return be.(*Backend)
 	}
-	value, _ := ic.router.Get(key)
-	be := ic.mapToBackend[value]
-	ic.routerCaches.Store(key, be)
-	return be
+	for {
+		value, _ := ic.router.Get(key)
+		be := ic.mapToBackend[value]
+		if be.IsActive() {
+			ic.routerCaches.Store(key, be)
+			return be
+		} else {
+			ic.RemoveBackend(key)
+		}
+	}
 }
 
 func (ic *Circle) GetHealth(stats bool) interface{} {
@@ -96,10 +120,19 @@ func (ic *Circle) GetHealth(stats bool) interface{} {
 }
 
 func (ic *Circle) IsActive() bool {
+	var r bool
 	for _, be := range ic.Backends {
-		if !be.IsActive() {
-			return false
-		}
+		r = r || be.IsActive()
 	}
-	return true
+	return r
 }
+
+// 只要有一个故障, 整个 circle 都不可用
+// func (ic *Circle) IsActive() bool {
+// 	for _, be := range ic.Backends {
+// 		if !be.IsActive() {
+// 			return false
+// 		}
+// 	}
+// 	return true
+// }

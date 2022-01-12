@@ -7,7 +7,6 @@ package backend
 import (
 	"errors"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"sync"
 
@@ -23,6 +22,38 @@ var (
 	ErrGetBackends         = errors.New("can't get backends")
 )
 
+// func QueryFromQL(w http.ResponseWriter, req *http.Request, ip *Proxy, tokens []string, db string) (body []byte, err error) {
+// 	// available circle -> backend by key(db,meas) -> select or show
+// 	meas, err := GetMeasurementFromTokens(tokens)
+// 	if err != nil {
+// 		return nil, ErrGetMeasurement
+// 	}
+// 	key := GetKey(db, meas)
+// 	badSet := make(map[int]bool)
+// 	for {
+// 		if len(badSet) == len(ip.Circles) {
+// 			return nil, ErrBackendsUnavailable
+// 		}
+// 		id := rand.Intn(len(ip.Circles))
+// 		if badSet[id] {
+// 			continue
+// 		}
+// 		circle := ip.Circles[id]
+// 		if circle.WriteOnly {
+// 			badSet[id] = true
+// 			continue
+// 		}
+// 		be := circle.GetBackend(key)
+// 		if be.IsActive() {
+// 			qr := be.Query(req, w, false)
+// 			if qr.Status > 0 || len(badSet) == len(ip.Circles)-1 {
+// 				return qr.Body, qr.Err
+// 			}
+// 		}
+// 		badSet[id] = true
+// 	}
+// }
+
 func QueryFromQL(w http.ResponseWriter, req *http.Request, ip *Proxy, tokens []string, db string) (body []byte, err error) {
 	// available circle -> backend by key(db,meas) -> select or show
 	meas, err := GetMeasurementFromTokens(tokens)
@@ -35,11 +66,11 @@ func QueryFromQL(w http.ResponseWriter, req *http.Request, ip *Proxy, tokens []s
 		if len(badSet) == len(ip.Circles) {
 			return nil, ErrBackendsUnavailable
 		}
-		id := rand.Intn(len(ip.Circles))
+		circle := ip.GetCircle(key)
+		id := circle.CircleId
 		if badSet[id] {
 			continue
 		}
-		circle := ip.Circles[id]
 		if circle.WriteOnly {
 			badSet[id] = true
 			continue
